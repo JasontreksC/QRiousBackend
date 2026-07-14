@@ -1,15 +1,23 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.database import engine
-from app.routers import charms, students
+from app.errors import (
+    AppError,
+    app_error_handler,
+    http_exception_handler,
+    unhandled_exception_handler,
+    validation_exception_handler,
+)
+from app.routers import charms, stats, students, surveys
 from app.schemas import HealthResponse
 
 app = FastAPI(
     title="QRious Backend",
-    description="Student & Charm matching API",
-    version="0.1.0",
+    description="Student survey & charm matching API",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -20,8 +28,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(students.router, prefix="/api")
+app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, unhandled_exception_handler)
+
+app.include_router(surveys.router, prefix="/api")
+app.include_router(stats.router, prefix="/api")
 app.include_router(charms.router, prefix="/api")
+app.include_router(students.router, prefix="/api")
 
 
 @app.get("/health", response_model=HealthResponse)

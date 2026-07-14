@@ -1,27 +1,31 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.errors import AppError
 from app.models import Charm
-from app.schemas import CharmCreate, CharmRead, CharmUpdate
+from app.schemas import CharmCreate, CharmListResponse, CharmRead, CharmUpdate
 
 router = APIRouter(prefix="/charms", tags=["charms"])
 
 
-@router.get("", response_model=list[CharmRead])
-def list_charms(db: Session = Depends(get_db)) -> list[Charm]:
-    return list(db.scalars(select(Charm).order_by(Charm.name)).all())
+@router.get("", response_model=CharmListResponse)
+def list_charms(db: Session = Depends(get_db)) -> CharmListResponse:
+    charms = list(db.scalars(select(Charm).order_by(Charm.name)).all())
+    return CharmListResponse(charms=charms)
 
 
 @router.get("/{charm_id}", response_model=CharmRead)
 def get_charm(charm_id: uuid.UUID, db: Session = Depends(get_db)) -> Charm:
     charm = db.get(Charm, charm_id)
     if charm is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Charm not found"
+        raise AppError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="NOT_FOUND",
+            message="Charm not found",
         )
     return charm
 
@@ -41,8 +45,10 @@ def update_charm(
 ) -> Charm:
     charm = db.get(Charm, charm_id)
     if charm is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Charm not found"
+        raise AppError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="NOT_FOUND",
+            message="Charm not found",
         )
 
     data = payload.model_dump(exclude_unset=True)
@@ -58,8 +64,10 @@ def update_charm(
 def delete_charm(charm_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
     charm = db.get(Charm, charm_id)
     if charm is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Charm not found"
+        raise AppError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="NOT_FOUND",
+            message="Charm not found",
         )
     db.delete(charm)
     db.commit()

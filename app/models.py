@@ -22,6 +22,12 @@ class Student(Base):
     want_charms: Mapped[list["Want"]] = relationship(
         back_populates="student", cascade="all, delete-orphan"
     )
+    ex_have: Mapped["ExHave | None"] = relationship(
+        back_populates="student", cascade="all, delete-orphan", uselist=False
+    )
+    ex_want: Mapped["ExWant | None"] = relationship(
+        back_populates="student", cascade="all, delete-orphan", uselist=False
+    )
 
 
 class Charm(Base):
@@ -70,3 +76,25 @@ class Want(Base):
 
     student: Mapped["Student"] = relationship(back_populates="want_charms")
     charm: Mapped["Charm"] = relationship(back_populates="want_students")
+
+
+class ExHave(Base):
+    __tablename__ = "ex_have"
+
+    student_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("student.student_id", ondelete="CASCADE"), primary_key=True
+    )
+    charm: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    student: Mapped["Student"] = relationship(back_populates="ex_have")
+
+
+class ExWant(Base):
+    __tablename__ = "ex_want"
+
+    student_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("student.student_id", ondelete="CASCADE"), primary_key=True
+    )
+    charm: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    student: Mapped["Student"] = relationship(back_populates="ex_want")
