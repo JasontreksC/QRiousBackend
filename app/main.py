@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app.admin import setup_admin
 from app.database import engine
 from app.errors import (
     AppError,
@@ -38,6 +39,8 @@ app.include_router(stats.router, prefix="/api")
 app.include_router(charms.router, prefix="/api")
 app.include_router(students.router, prefix="/api")
 
+setup_admin(app)
+
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
@@ -52,4 +55,8 @@ def health() -> HealthResponse:
 
 @app.get("/")
 def root() -> dict[str, str]:
-    return {"message": "QRious Backend API", "docs": "/docs"}
+    return {
+        "message": "QRious Backend API",
+        "docs": "/docs",
+        "admin": "/admin",
+    }

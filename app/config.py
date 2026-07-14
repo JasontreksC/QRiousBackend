@@ -1,6 +1,6 @@
-from functools import cached_property
 from urllib.parse import quote_plus
 
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,7 +16,13 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     postgres_db: str = "qrious"
 
-    @cached_property
+    # SQLAdmin (/admin)
+    admin_username: str = "admin"
+    admin_password: str = "admin"
+    admin_secret_key: str = "change-me-in-production"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
     def sqlalchemy_database_url(self) -> str:
         if self.database_url:
             return self.database_url

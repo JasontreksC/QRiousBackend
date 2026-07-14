@@ -29,6 +29,9 @@ class Student(Base):
         back_populates="student", cascade="all, delete-orphan", uselist=False
     )
 
+    def __str__(self) -> str:
+        return f"{self.student_id} ({self.name or '-'})"
+
 
 class Charm(Base):
     __tablename__ = "charm"
@@ -44,6 +47,9 @@ class Charm(Base):
     want_students: Mapped[list["Want"]] = relationship(
         back_populates="charm", cascade="all, delete-orphan"
     )
+
+    def __str__(self) -> str:
+        return self.name or str(self.charm_id)
 
 
 class Have(Base):

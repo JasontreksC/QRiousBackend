@@ -1,6 +1,7 @@
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.responses import PlainTextResponse, Response
 
 
 def error_body(code: str, message: str) -> dict:
@@ -13,6 +14,10 @@ class AppError(HTTPException):
         super().__init__(status_code=status_code, detail=message)
 
 
+def _is_api_path(request: Request) -> bool:
+    return request.url.path.startswith("/api")
+
+
 async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
@@ -21,8 +26,16 @@ async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
 
 
 async def http_exception_handler(
-    _request: Request, exc: HTTPException
-) -> JSONResponse:
+    request: Request, exc: HTTPException
+) -> Response:
+    # SQLAdmin(/admin) 등 HTML 라우트는 JSON 에러 형식을 쓰지 않음
+    if not _is_api_path(request):
+        return PlainTextResponse(
+            str(exc.detail),
+            status_code=exc.status_code,
+            headers=getattr(exc, "headers", None),
+        )
+
     if isinstance(exc.detail, dict) and "code" in exc.detail and "message" in exc.detail:
         return JSONResponse(
             status_code=exc.status_code,
@@ -40,8 +53,11 @@ async def http_exception_handler(
 
 
 async def validation_exception_handler(
-    _request: Request, exc: RequestValidationError
-) -> JSONResponse:
+    request: Request, exc: RequestValidationError
+) -> Response:
+    if not _is_api_path(request):
+        return PlainTextResponse(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
+
     errors = exc.errors()
     if errors:
         first = errors[0]
@@ -57,8 +73,13 @@ async def validation_exception_handler(
 
 
 async def unhandled_exception_handler(
-    _request: Request, _exc: Exception
-) -> JSONResponse:
+    request: Request, _exc: Exception
+) -> Response:
+    if not _is_api_path(request):
+        return PlainTextResponse(
+            "Internal Server Error",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=error_body("INTERNAL_ERROR", "Internal server error"),
