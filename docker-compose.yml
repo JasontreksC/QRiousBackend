@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: qrious-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-qrious}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qrious}
+      POSTGRES_DB: ${POSTGRES_DB:-qrious}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-qrious} -d ${POSTGRES_DB:-qrious}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: qrious-backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-qrious}:${POSTGRES_PASSWORD:-qrious}@db:5432/${POSTGRES_DB:-qrious}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
