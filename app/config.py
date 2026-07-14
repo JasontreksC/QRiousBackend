@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = (
-        "postgresql+psycopg2://qrious:qrious@localhost:5432/qrious"
+        "postgresql+psycopg2://qrious:qrious@db:5432/qrious"
     )
 
 
